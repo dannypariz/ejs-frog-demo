@@ -5,8 +5,10 @@ ARG JF_TOKEN
 # Create app directory
 WORKDIR /usr/src/app
 
-# Install dependencies & tools
-RUN apt-get update && \
+# Fix expired Debian Buster sources and install required tools
+RUN sed -i 's|http://deb.debian.org|http://archive.debian.org|g' /etc/apt/sources.list && \
+    sed -i '/security.debian.org/d' /etc/apt/sources.list && \
+    apt-get update && \
     apt-get install -y curl make ncat && \
     apt-get clean
 
@@ -14,15 +16,15 @@ RUN apt-get update && \
 RUN curl -fL https://install-cli.jfrog.io | sh && \
     mv jf /usr/local/bin/
 
-# Copy package files first to leverage layer caching
+# Copy package files first to leverage Docker layer caching
 COPY package*.json ./
 
-# Authenticate JFrog CLI and install npm deps (omit dev)
+# Configure and install dependencies using JFrog CLI
 RUN jf c import ${JF_TOKEN} && \
     jf npmc --repo-resolve=dro-npm-unsecure-remote && \
     jf npm i --omit=dev
 
-# Copy app code
+# Copy application source
 COPY server.js ./
 COPY public/ public/
 COPY views/ views/
