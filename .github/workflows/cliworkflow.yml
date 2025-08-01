@@ -1,10 +1,5 @@
 name: Build and Publish with JFrog CLI
 
-on:
-  push:
-    branches:
-      - main
-
 env:
   JF_URL: https://mycompany.jfrog.io/artifactory
   JF_USER: ${{ secrets.JF_USER }}
