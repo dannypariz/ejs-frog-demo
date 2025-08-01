@@ -40,12 +40,11 @@ jobs:
         run: jf npm publish
         # Upload the packeges to Artifactory
 
-##    - name: Collect and Publish Build Info With JFrog CLI
-##      run: |
-##        jf rt build-collect-env
-##        jf rt build-add-git
-##        jf rt build-publish
-        # Captures environment and git metadata, and publishes build info to Artifactory
+      - name: Collect and Publish Build Info With JFrog CLI
+        run: |
+          jf rt build-collect-env
+          jf rt build-add-git
+          jf rt build-publish
 
       - name: Scan Build with Xray
         run: jf bs --vuln --fail=false
