@@ -1,4 +1,4 @@
-name: "Danny's ejs Build"
+name: "froghome"
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ jobs:
     env:
       IMAGE_NAME: vuln-ejs
       IMAGE_TAG: ${{ github.run_number }}
-      DOCKER_REGISTRY: ${{ vars.JF_URL }}/danny-docker-virtual
+      DOCKER_REPO: danny-docker-virtual
       BUILD_NAME: froghome
       BUILD_NUMBER: ${{ github.run_number }}
 
@@ -41,32 +41,28 @@ jobs:
       - name: Publish npm Package to Artifactory
         run: jf npm publish
 
-      - name: Docker Login to Artifactory
-        run: |
-          echo "${{ secrets.JF_ACCESS_TOKEN }}" | docker login ${{ vars.JF_URL }} -u jfrog --password-stdin
-
       - name: Build Docker Image
         run: |
           docker build \
             --build-arg JF_TOKEN=${{ secrets.JF_ACCESS_TOKEN }} \
-            -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
+            -t ${{ vars.JF_URL }}/${{ env.DOCKER_REPO }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
 
-      - name: Attach Build Info and Publish
+      - name: Attach and Push Docker Image with Build Info
         run: |
           jf rt build-collect-env
           jf rt build-add-git
 
-          # Attach npm artifact to build
+          # Attach npm artifact
           jf rt bp $BUILD_NAME $BUILD_NUMBER
 
-          # Push docker image with build-info attached
+          # Push Docker image with build info
           jf rt docker-push \
-            $DOCKER_REGISTRY/$IMAGE_NAME:$IMAGE_TAG \
-            danny-docker-virtual \
+            ${{ vars.JF_URL }}/${{ env.DOCKER_REPO }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+            $DOCKER_REPO \
             --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER
 
-          # Publish complete build info to Artifactory
+          # Publish full build info
           jf rt build-publish $BUILD_NAME $BUILD_NUMBER
 
       - name: Scan Build with Xray
