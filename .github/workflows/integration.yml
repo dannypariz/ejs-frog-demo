@@ -2,18 +2,13 @@ name: "froghome"
 
 on:
   workflow_dispatch:
+#env:
+  #JF_BUILD_NAME: ejs-frog-demo-build
+  #JF_BUILD_NUMBER: ${{ github.run_number }}
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
-
-    env:
-      IMAGE_NAME: vuln-ejs
-      IMAGE_TAG: ${{ github.run_number }}
-      JF_DOMAIN: solengeu.jfrog.io
-      DOCKER_REPO: danny-docker-virtual
-      BUILD_NAME: froghome
-      BUILD_NUMBER: ${{ github.run_number }}
 
     steps:
       - name: Checkout
@@ -22,49 +17,35 @@ jobs:
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_URL: https://${{ env.JF_DOMAIN }}
+          JF_URL: ${{ vars.JF_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
-      - name: Setup Node.js
+      - name: Setup Node npm
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
-      - name: Configure npm for Artifactory
+      - name: Set CLI npm Config
         run: |
           jf npm-config --global=true \
             --repo-resolve=tutorial-npm \
             --repo-deploy=tutorial-npm
+        # Configures .npmrc globally to resolve and publish through Artifactory
 
-      - name: Install npm Dependencies
+      - name: Install Dependencies
         run: jf npm install
+        # Downloads dependencies and attaches to build info
 
-      - name: Publish npm Package to Artifactory
+      - name: Publish Package to Artifactory
         run: jf npm publish
+        # Upload the packeges to Artifactory
 
-      - name: Build Docker Image
-        run: |
-          docker build \
-            --build-arg JF_TOKEN=${{ secrets.JF_ACCESS_TOKEN }} \
-            -t ${{ env.JF_DOMAIN }}/${{ env.DOCKER_REPO }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
-
-      - name: Attach and Push Docker Image with Build Info
-        run: |
-          jf rt build-collect-env
-          jf rt build-add-git
-
-          # Attach npm artifacts
-          jf rt bp $BUILD_NAME $BUILD_NUMBER
-
-          # Push docker image with build info
-          jf rt docker-push \
-            $JF_DOMAIN/$DOCKER_REPO/$IMAGE_NAME:$IMAGE_TAG \
-            $DOCKER_REPO \
-            --build-name=$BUILD_NAME \
-            --build-number=$BUILD_NUMBER
-
-          # Publish full build info
-          jf rt build-publish $BUILD_NAME $BUILD_NUMBER
+##    - name: Collect and Publish Build Info With JFrog CLI
+##      run: |
+##        jf rt build-collect-env
+##        jf rt build-add-git
+##        jf rt build-publish
+        # Captures environment and git metadata, and publishes build info to Artifactory
 
       - name: Scan Build with Xray
-        run: jf bs $BUILD_NAME $BUILD_NUMBER --vuln --fail=false
+        run: jf bs --vuln --fail=false
