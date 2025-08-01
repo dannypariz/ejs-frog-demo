@@ -62,8 +62,5 @@ jobs:
             --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER
 
-          # Publish full build info
-          jf rt build-publish $BUILD_NAME $BUILD_NUMBER
-
       - name: Scan Build with Xray
         run: jf bs $BUILD_NAME $BUILD_NUMBER --vuln --fail=false
