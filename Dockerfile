@@ -12,14 +12,17 @@ RUN sed -i 's|http://deb.debian.org|http://archive.debian.org|g' /etc/apt/source
     apt-get install -y curl make ncat && \
     apt-get clean
 
-# Install JFrog CLI (v2) - it installs to /usr/local/bin by default
+# Install JFrog CLI (v2) - installs to /usr/local/bin
 RUN curl -fL https://install-cli.jfrog.io | sh
 
 # Copy package files first to leverage Docker layer caching
 COPY package*.json ./
 
-# Authenticate and install production deps via JFrog CLI
-RUN jf c import ${JF_TOKEN} && \
+# Authenticate with JFrog and install dependencies (omit dev)
+RUN jf c add default \
+    --url=https://solengeu.jfrog.io \
+    --access-token=${JF_TOKEN} \
+    --interactive=false && \
     jf npmc --repo-resolve=dro-npm-unsecure-remote && \
     jf npm i --omit=dev
 
